@@ -11,11 +11,9 @@ data "aws_ami" "ecs" {
   }
 }
 
-data "aws_ec2_instance_type" "main" {
-  /*
-  Download info about instance types
-  */
-  instance_type = var.instance_type
+locals {
+  # Gather data about the ECS AMI storage volume
+  ami_volume = one(data.aws_ami.ecs.block_device_mappings)
 }
 
 resource "aws_launch_template" "main" {
@@ -27,25 +25,23 @@ resource "aws_launch_template" "main" {
   instance_type = var.instance_type
   key_name = var.instance_key_name
   ebs_optimized = true
-  user_data = base64encode(templatefile("${path.module}/user-data.sh", {
-    cluster_name = local.cluster_name,
+  user_data = base64encode(templatefile("${path.module}/nodes.user-data.sh.tpl", {
+    cluster_name = var.name,
   }))
 
   iam_instance_profile {
-    name = aws_iam_instance_profile.nodes.name
+    name = aws_iam_instance_profile.ecs_instance.name
   }
 
   tag_specifications {
     resource_type = "instance"
-    tags = {
-      "Name" = var.name
-    }
+    tags = { "Name" = var.name }
   }
 
   network_interfaces {
     associate_public_ip_address = false
     security_groups = concat([
-      module.security_group_ec2_nodes.id,
+      module.security_group_ecs_instances.id,
     ], var.extra_security_groups)
   }
 
@@ -54,24 +50,23 @@ resource "aws_launch_template" "main" {
   }
 
   block_device_mappings {
-    device_name = "/dev/xvda"
-
+    device_name = local.ami_volume.device_name
     ebs {
       delete_on_termination = true
-      volume_size = var.instance_storage
-      volume_type = "gp2"
+      volume_size = local.ami_volume.ebs.volume_size  # Minimum defined by AMI
+      volume_type = local.ami_volume.ebs.volume_type
     }
   }
 }
 
-module "security_group_ec2_nodes" {
+module "security_group_ecs_instances" {
   /*
-  The security group to wrap EC2 instances
+  The security group to wrap EC2 instances in HTTP services
   */
   source = "app.terraform.io/continuum/security-group/aws"
   version = "~> 1.0"
   name = "i-${var.name}"
-  vpc_id = var.vpc_id
+  vpc_id = local.vpc_id
   ingress_security_groups = var.ingress_security_groups
   ingress_cidr_blocks = var.ingress_cidr_blocks
   allow_self_ingress = true
