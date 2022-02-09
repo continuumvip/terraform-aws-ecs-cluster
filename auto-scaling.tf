@@ -18,6 +18,11 @@ resource "aws_autoscaling_group" "main" {
     id = aws_launch_template.main.id
     version = aws_launch_template.main.latest_version
   }
+
+  # Refresh instances automatically after changes
+  instance_refresh {
+    strategy = "Rolling"
+  }
 }
 
 resource "aws_ecs_capacity_provider" "main" {
