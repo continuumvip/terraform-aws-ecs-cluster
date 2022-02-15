@@ -63,7 +63,7 @@ module "security_group_ecs_instances" {
   /*
   The security group to wrap EC2 instances in HTTP services
   */
-  source = "app.terraform.io/continuum/security-group/aws"
+  source = "emyller/security-group/aws"
   version = "~> 1.0"
   name = "i-${var.name}"
   vpc_id = local.vpc_id
