@@ -1,13 +1,14 @@
 # ecs-application
 
-Manage an ECS cluster.
+A Terraform module to manage an AWS ECS cluster.
 
 
-## Example
+## Usage example
 
 ```hcl
 module "ecs_cluster" {
-  source = "..."
+  source = "emyller/ecs-cluster/aws"
+  version = "~> 1.0"
 
   name = "production-web"
   subnets = module.vpc.private_subnets
