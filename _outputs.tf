@@ -1,4 +1,5 @@
 output "arn" {
+  description = "The ARN of the resouece."
   value = aws_ecs_cluster.main.arn
 }
 
@@ -11,5 +12,6 @@ output "name" {
 }
 
 output "instances_security_group_id" {
+  description = "The ID of the Security Group created for ECS instances."
   value = module.security_group_ecs_instances.id
 }
